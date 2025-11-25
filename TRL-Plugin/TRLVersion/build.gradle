@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'trl.version'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.viaversion.com' }
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url = 'https://jitpack.io' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+    
+    // ViaVersion core and addons - SHADOW these for single JAR
+    implementation 'com.viaversion:viaversion:5.5.1'
+    implementation 'com.viaversion:viabackwards:5.5.1'
+    implementation 'com.viaversion:viarewind:4.0.11'
+    implementation 'com.viaversion:viarewind-legacy-support:1.0.0' // Latest legacy if available
+    
+    // ProtocolLib REQUIRED for ViaVersion - user must install separately or shade (large ~10MB)
+    // compileOnly 'com.comphenix.protocol:ProtocolLib:5.3.0' // Uncomment to compile against, but still need JAR
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+shadowJar {
+    archiveClassifier = ''
+    relocate 'com.viaversion', 'trl.version.libs.viaversion' // Relocate to avoid conflicts
+    relocate 'us.myles.ViaVersion', 'trl.version.libs.viaversion' // Legacy
+    // Exclude Via plugin.yml to avoid multi-plugin detection
+    exclude '**/plugin.yml'
+    exclude '**/META-INF/services/com.viaversion.viaversion.api.platform.providers.ViaProvidersLoader'
+}
+
+build.finalizedBy(shadowJar)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
